@@ -1,0 +1,21 @@
+## Interface: 20506
+## Title: PandaQuest Auction
+## Notes: Auction prices, market scans and private listing history for PandaQuest
+## Notes-fiFI: Huutokauppahinnat, hintahaut ja yksityinen myyntihistoria PandaQuestille
+## Version: 0.2.0
+## Author: vem882
+## Dependencies: PandaQuest
+## OptionalDeps: Auctionator, TradeSkillMaster
+## IconTexture: Interface\AddOns\PandaQuest\Textures\icon.tga
+## X-Website: https://github.com/vem882/pqAuction
+## X-License: GPL-3.0
+## X-Curse-Project-ID: 1807835
+## Category: Auctions
+
+Locale.lua
+Bootstrap.lua
+Database\Overrides\AuctionMissing.lua
+Telemetry.lua
+AuctionScan.lua
+OwnAuctions.lua
+Commands.lua
