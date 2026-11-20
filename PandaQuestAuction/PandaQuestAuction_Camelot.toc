@@ -6,7 +6,7 @@
 ## Author: vem882
 ## Dependencies: PandaQuest
 ## OptionalDeps: Auctionator, TradeSkillMaster
-## IconTexture: Interface\AddOns\PandaQuest\Textures\icon.tga
+## IconTexture: Interface\\AddOns\\PandaQuestAuction\\Textures\\icon.tga
 ## X-Website: https://github.com/vem882/pqAuction
 ## X-License: GPL-3.0
 ## X-Curse-Project-ID: 1807835
