@@ -27,3 +27,5 @@ PandaQuest Auction contains the auction UI, native scanner, Auctionator capture,
 GPL-3.0. See [LICENSE](LICENSE). World of Warcraft is a trademark of Blizzard Entertainment. PandaQuest Auction is an unofficial fan project.
 
 The addon icon combines the PandaQuest logo with the WoW texture `INV_MISC_COIN_01`. The game artwork belongs to Blizzard Entertainment.
+
+Each release includes a generated `CHANGELOG.md` in the addon folder. The same added, changed and removed sections appear on GitHub and CurseForge.
