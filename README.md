@@ -21,7 +21,6 @@ A reload or logout saves the observations. [PandaQuest Sync](https://pd.zroot.it
 
 PandaQuest Auction contains the auction UI, native scanner, Auctionator capture, private auction capture and local price commands. `Database/Overrides/AuctionMissing.lua` is generated from PandaBase observations. The [PandaQuest repository](https://github.com/vem882/pandaquest) builds and releases the compatible packages together.
 
-The [CurseForge project text](docs/curseforge-description.md) is ready to paste into the project editor. CurseForge project ID is `1807835`.
 
 ## Licence
 
