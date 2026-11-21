@@ -442,21 +442,13 @@ local function createTab(parent)
     local previous = parent.AuctionsTab or parent.SellTab or parent.BuyTab
     if previous then
         tab:SetPoint("LEFT", previous, "RIGHT", -15, 0)
-        -- Start under the native tab row.  The previous version started at the
-        -- frame top, which drew PQ controls over Auctions and Auctionator.
-        panel:SetPoint("TOP", previous, "BOTTOM", 0, -2)
-        panel:SetPoint("LEFT", parent, "LEFT", 5, 0)
-        panel:SetPoint("RIGHT", parent, "RIGHT", -5, 0)
     else
         tab:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 20, -28)
-        panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -66)
-        panel:SetPoint("RIGHT", parent, "RIGHT", -12, 0)
     end
-    if parent.MoneyFrameBorder then
-        panel:SetPoint("BOTTOM", parent.MoneyFrameBorder, "TOP", 0, 2)
-    else
-        panel:SetPoint("BOTTOM", parent, "BOTTOM", 0, 32)
-    end
+    -- Auctionator's tabs sit below the frame.  The PQ page belongs to the
+    -- frame's content rectangle, never below whichever tab happens to precede it.
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -66)
+    panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -12, 12)
     tab:SetText("PQ")
     tab:SetScript("OnClick", function()
         if panel:IsShown() then

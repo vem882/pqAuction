@@ -40,7 +40,6 @@ local finnish = {
 }
 
 -- Follow PandaQuest's language setting, including language changes made without a reload.
-ns.L = setmetatable({}, { __index = function(_, key)
-    if ns.Core.GetLocale() == "fiFI" then return finnish[key] or key end
-    return key
-end })
+-- Auction UI intentionally uses one language on every client.  Price terms and
+-- buy/sell signals stay consistent when screenshots or scan results are shared.
+ns.L = setmetatable({}, { __index = function(_, key) return key end })
