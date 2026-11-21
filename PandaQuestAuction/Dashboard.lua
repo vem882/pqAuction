@@ -158,4 +158,4 @@ local function build(panel)
     return panel
 end
 
-Core.Window.RegisterTab("auction", "Huutokauppa", build)
+Core.Window.RegisterTab("auction", "Auction", build)
