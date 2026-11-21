@@ -42,6 +42,9 @@ local function build(panel)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(1, 1)
     scroll:SetScrollChild(content)
+    scroll:SetScript("OnSizeChanged", function(_, width)
+        content:SetWidth(math.max(1, width))
+    end)
     local text = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     text:SetPoint("TOPLEFT")
     text:SetPoint("RIGHT")
@@ -51,6 +54,7 @@ local function build(panel)
     local function refresh()
         local lines, now = {}, time()
         if page == "market" then
+            ns.Telemetry.CaptureVisibleAuctionPrices()
             local rows = {}
             for id, row in pairs(ns.Telemetry.GetMarketPrices()) do
                 local name = itemName(id)
@@ -107,7 +111,10 @@ local function build(panel)
     end
     search:SetScript("OnTextChanged", function(self) query = self:GetText() or ""; refresh() end)
     search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    panel:SetScript("OnShow", refresh)
+    panel:SetScript("OnShow", function()
+        content:SetWidth(math.max(1, scroll:GetWidth()))
+        refresh()
+    end)
     return panel
 end
 
