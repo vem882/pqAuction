@@ -1,7 +1,6 @@
 ## Interface: 16001
 ## Title: PandaQuest Auction
 ## Notes: Auction prices, market scans and private listing history for PandaQuest
-## Notes-fiFI: Huutokauppahinnat, hintahaut ja yksityinen myyntihistoria PandaQuestille
 ## Version: 0.2.0
 ## Author: vem882
 ## Dependencies: PandaQuest
