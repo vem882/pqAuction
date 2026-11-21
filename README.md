@@ -19,7 +19,7 @@ A reload or logout saves the observations. [PandaQuest Sync](https://pd.zroot.it
 
 ## Development
 
-PandaQuest Auction contains the auction UI, native scanner, Auctionator capture, private auction capture and local price commands. `Database/Overrides/AuctionMissing.lua` is generated from PandaBase observations. Set the repository variable `PANDABASE_AUCTION_TARGETS_URL` to PandaBase's generated Lua download URL: the scheduled workflow then validates, downloads and commits the missing-price target list every 10 minutes. The [PandaQuest repository](https://github.com/vem882/pandaquest) builds and releases the compatible packages together.
+PandaQuest Auction contains the auction UI, native scanner, Auctionator capture, private auction capture and local price commands. `Database/Overrides/AuctionMissing.lua` is generated from the verified PandaBase production mirror and automatically refreshed every 10 minutes. The [PandaQuest repository](https://github.com/vem882/pandaquest) builds and releases the compatible packages together.
 
 
 ## Licence
