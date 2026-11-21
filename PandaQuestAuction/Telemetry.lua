@@ -12,10 +12,13 @@ ns.Telemetry = M
 -- A small local read model for PandaQuest's market page.  It deliberately
 -- stores observations, not seller names or raw listings.
 local MAX_MARKET_PRICES = 12000
+local function unixNow()
+    return (time and time()) or 0
+end
 local function rememberPrices(prices, source)
     local store = _G.PandaQuestAuctionMarket
     if type(store) ~= "table" or store.version ~= 1 or type(store.prices) ~= "table" then
-        store = { version = 1, prices = {} }
+        store = { version = 1, prices = {}, alerts = {} }
         _G.PandaQuestAuctionMarket = store
     end
     local now, count = unixNow(), 0
@@ -50,6 +53,41 @@ function M.GetMarketPrices()
     return type(store) == "table" and type(store.prices) == "table" and store.prices or {}
 end
 
+local function alertStore()
+    local store = _G.PandaQuestAuctionMarket
+    if type(store) ~= "table" or store.version ~= 1 or type(store.prices) ~= "table" then
+        store = { version = 1, prices = {}, alerts = {} }
+        _G.PandaQuestAuctionMarket = store
+    end
+    if type(store.alerts) ~= "table" then store.alerts = {} end
+    return store
+end
+
+function M.SetPriceAlert(itemId, threshold, direction)
+    if type(itemId) ~= "number" or type(threshold) ~= "number"
+        or (direction ~= "below" and direction ~= "above") then return false end
+    alertStore().alerts[itemId] = { threshold = math.floor(threshold), direction = direction, fired = false }
+    return true
+end
+
+local function checkAlerts(prices)
+    for id, price in pairs(prices or {}) do
+        local alert = alertStore().alerts[id]
+        local matched = alert and ((alert.direction == "below" and price <= alert.threshold)
+            or (alert.direction == "above" and price >= alert.threshold))
+        if matched and not alert.fired then
+            alert.fired = true
+            if RaidNotice_AddMessage and RaidWarningFrame then
+                RaidNotice_AddMessage(RaidWarningFrame, "PQ alert: " .. (Core.DB.GetItemName(id) or ("Item #" .. id)),
+                    ChatTypeInfo["RAID_WARNING"])
+            end
+            if PlaySound and SOUNDKIT and SOUNDKIT.RAID_WARNING then PlaySound(SOUNDKIT.RAID_WARNING) end
+        elseif alert and not matched then
+            alert.fired = false
+        end
+    end
+end
+
 -- Atlas and other scanners use Blizzard's browse cache too.  Read the public
 -- result rows when the market page opens, without depending on their internals.
 function M.CaptureVisibleAuctionPrices()
@@ -62,11 +100,10 @@ function M.CaptureVisibleAuctionPrices()
             prices[id] = not prices[id] and price or math.min(prices[id], price)
         end
     end
-    if next(prices) then rememberPrices(prices, "auction house") end
-end
-
-local function unixNow()
-    return (time and time()) or 0
+    if next(prices) then
+        rememberPrices(prices, "auction house")
+        checkAlerts(prices)
+    end
 end
 
 -- Keep the newest full scan separate from quest recording and its rolling event buffer.
@@ -110,6 +147,7 @@ function M.QueueNativeAuctionPrices(prices, quantities, listings, targeted)
     end
     if #scan.events > 0 then nativeAuctionScan = scan end
     rememberPrices(prices, "scan")
+    checkAlerts(prices)
     return added
 end
 
@@ -175,6 +213,7 @@ local function hookAuctionator()
         end
         pendingAuctionScan = { at = unixNow(), events = events }
         rememberPrices(prices, "auctionator")
+        checkAlerts(prices)
         Log.Print("Queued %d of %d Auctionator prices. Log out or reload to send them with Sync.", count, #ids)
     end }, completed)
 end

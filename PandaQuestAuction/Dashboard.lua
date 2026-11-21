@@ -21,6 +21,24 @@ local function itemName(id)
         or (GetItemInfo and GetItemInfo(id)) or ("Item #" .. id)
 end
 
+local function findItem(query)
+    local id = tonumber(query:match("%d+"))
+    if id then return id end
+    local wanted = query:lower()
+    for candidate in Core.DB.IterateItemIDs() do
+        local name = Core.DB.GetItemName(candidate)
+        if name and name:lower() == wanted then return candidate end
+    end
+end
+
+local function parseMoney(value)
+    local gold = tonumber(value:match("(%d+)%s*[gG]")) or 0
+    local silver = tonumber(value:match("(%d+)%s*[sS]")) or 0
+    local copper = tonumber(value:match("(%d+)%s*[cC]")) or 0
+    if gold > 0 or silver > 0 or copper > 0 then return gold * 10000 + silver * 100 + copper end
+    return tonumber(value)
+end
+
 local function build(panel)
     local page, query = "market", ""
     local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -36,6 +54,14 @@ local function build(panel)
     search:SetPoint("TOPRIGHT", -18, -17)
     search:SetAutoFocus(false)
     search:SetTextInsets(7, 7, 0, 0)
+    search:SetText("")
+    local alertPrice = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
+    alertPrice:SetSize(110, 22)
+    alertPrice:SetPoint("TOPLEFT", 355, -63)
+    alertPrice:SetAutoFocus(false)
+    alertPrice:SetTextInsets(7, 7, 0, 0)
+    local alertStatus = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    alertStatus:SetPoint("LEFT", alertPrice, "RIGHT", 8, 0)
     local scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 16, -92)
     scroll:SetPoint("BOTTOMRIGHT", -35, 14)
@@ -108,6 +134,20 @@ local function build(panel)
         local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
         b:SetSize(105, 24); b:SetPoint("TOPLEFT", 16 + (i - 1) * 110, -62); b:SetText(spec[2])
         b:SetScript("OnClick", function() page = spec[1]; refresh() end)
+    end
+    local function addAlert(direction)
+        local id, threshold = findItem(search:GetText() or ""), parseMoney(alertPrice:GetText() or "")
+        if not id or not threshold or threshold < 1 then
+            alertStatus:SetText("Enter an exact item name or ID and a price (e.g. 12g 50s).")
+            return
+        end
+        ns.Telemetry.SetPriceAlert(id, threshold, direction)
+        alertStatus:SetText((direction == "below" and "Alert below " or "Alert above ") .. money(threshold))
+    end
+    for i, spec in ipairs({ { "below", "Alert ≤" }, { "above", "Alert ≥" } }) do
+        local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+        b:SetSize(78, 24); b:SetPoint("TOPLEFT", 470 + (i - 1) * 82, -62); b:SetText(spec[2])
+        b:SetScript("OnClick", function() addAlert(spec[1]) end)
     end
     search:SetScript("OnTextChanged", function(self) query = self:GetText() or ""; refresh() end)
     search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
