@@ -12,13 +12,15 @@ ns.Telemetry = M
 -- A small local read model for PandaQuest's market page.  It deliberately
 -- stores observations, not seller names or raw listings.
 local MAX_MARKET_PRICES = 12000
+local HISTORY_WINDOW = 24 * 86400
+local MAX_HISTORY_POINTS = 144
 local function unixNow()
     return (time and time()) or 0
 end
 local function rememberPrices(prices, source)
     local store = _G.PandaQuestAuctionMarket
     if type(store) ~= "table" or store.version ~= 1 or type(store.prices) ~= "table" then
-        store = { version = 1, prices = {}, alerts = {} }
+        store = { version = 1, prices = {}, alerts = {}, wishlist = {} }
         _G.PandaQuestAuctionMarket = store
     end
     local now, count = unixNow(), 0
@@ -31,9 +33,21 @@ local function rememberPrices(prices, source)
     end
     for id, copper in pairs(prices or {}) do
         if type(id) == "number" and type(copper) == "number" and copper > 0 then
-            local old = store.prices[id]
-            store.prices[id] = { money = math.floor(copper), previous = old and old.money or nil,
-                at = now, source = source }
+            local old, price = store.prices[id], math.floor(copper)
+            -- Reading the same Blizzard browse page can happen several times
+            -- while the dashboard redraws.  Keep a useful observation history,
+            -- not duplicate redraw noise.
+            local history = old and old.history or {}
+            while #history > 0 and (type(history[1]) ~= "table" or now - (history[1].at or 0) > HISTORY_WINDOW) do
+                table.remove(history, 1)
+            end
+            local last = history[#history]
+            if not last or last.money ~= price or now - last.at >= 300 then
+                history[#history + 1] = { at = now, money = price }
+            end
+            while #history > MAX_HISTORY_POINTS do table.remove(history, 1) end
+            store.prices[id] = { money = price, previous = old and old.money or nil,
+                at = now, source = source, history = history }
             count = count + (old and 0 or 1)
         end
     end
@@ -53,14 +67,38 @@ function M.GetMarketPrices()
     return type(store) == "table" and type(store.prices) == "table" and store.prices or {}
 end
 
+function M.GetPriceHistory(itemId)
+    local row = M.GetMarketPrices()[itemId]
+    return row and type(row.history) == "table" and row.history or {}
+end
+
 local function alertStore()
     local store = _G.PandaQuestAuctionMarket
     if type(store) ~= "table" or store.version ~= 1 or type(store.prices) ~= "table" then
-        store = { version = 1, prices = {}, alerts = {} }
+        store = { version = 1, prices = {}, alerts = {}, wishlist = {} }
         _G.PandaQuestAuctionMarket = store
     end
     if type(store.alerts) ~= "table" then store.alerts = {} end
+    if type(store.wishlist) ~= "table" then store.wishlist = {} end
     return store
+end
+
+function M.GetPriceAlert(itemId)
+    return alertStore().alerts[itemId]
+end
+
+function M.ClearPriceAlert(itemId)
+    alertStore().alerts[itemId] = nil
+end
+
+function M.IsWishlisted(itemId)
+    return alertStore().wishlist[itemId] == true
+end
+
+function M.ToggleWishlist(itemId)
+    local store = alertStore()
+    store.wishlist[itemId] = not store.wishlist[itemId] or nil
+    return store.wishlist[itemId] == true
 end
 
 function M.SetPriceAlert(itemId, threshold, direction)
