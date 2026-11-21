@@ -10,7 +10,7 @@ PandaQuest Auction requires PandaQuest and is optional for questing. Auctionator
 
 ## In the game
 
-- Open the auction house and click **PQ** to open the scan panel. Run a full scan or choose **Find missing prices** to work through items lacking recent shared observations. The panel shows scan progress and the number of queued prices.
+- Open the auction house and select its **PQ** tab. Run a full scan or choose **Find missing prices** to work through items lacking recent shared observations. The panel uses the auction house's own content area and tabs rather than opening a separate window.
 - Use `/pq price <item name, ID, or link>` to see quotes from Auctionator or TradeSkillMaster, if available. Shift-click an item into the command to resolve duplicate names. Add `--share` to queue a quote when quest telemetry is enabled.
 - In **PandaQuest → Options → Sync & Privacy**, turn on **Share completed Auctionator scans** to share supported full scans. This choice is separate from quest telemetry.
 - Enable **Record my auctions privately** to keep your listings and settled sale receipts. Visit the auction house's Auctions tab and open your mailbox to collect the information available in the client.
@@ -19,7 +19,7 @@ A reload or logout saves the observations. [PandaQuest Sync](https://pd.zroot.it
 
 ## Development
 
-PandaQuest Auction contains the auction UI, native scanner, Auctionator capture, private auction capture and local price commands. `Database/Overrides/AuctionMissing.lua` is generated from PandaBase observations. The [PandaQuest repository](https://github.com/vem882/pandaquest) builds and releases the compatible packages together.
+PandaQuest Auction contains the auction UI, native scanner, Auctionator capture, private auction capture and local price commands. `Database/Overrides/AuctionMissing.lua` is generated from PandaBase observations. Set the repository variable `PANDABASE_AUCTION_TARGETS_URL` to PandaBase's generated Lua download URL: the scheduled workflow then validates, downloads and commits the missing-price target list every 10 minutes. The [PandaQuest repository](https://github.com/vem882/pandaquest) builds and releases the compatible packages together.
 
 
 ## Licence
