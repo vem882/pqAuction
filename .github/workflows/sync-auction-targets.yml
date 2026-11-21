@@ -1,0 +1,42 @@
+name: Sync PandaBase auction targets
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pandabase-auction-target-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: vars.PANDABASE_AUCTION_TARGETS_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Set this repository variable to PandaBase's generated Lua download URL.
+      # A repository variable keeps endpoint changes out of addon releases.
+      PANDABASE_AUCTION_TARGETS_URL: ${{ vars.PANDABASE_AUCTION_TARGETS_URL }}
+      TARGET: PandaQuestAuction/Database/Overrides/AuctionMissing.lua
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Download current missing-price targets
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/sync_auction_targets.py "$PANDABASE_AUCTION_TARGETS_URL" "$TARGET"
+      - name: Commit changed targets
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- "$TARGET"; then
+            echo "PandaBase targets are already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$TARGET"
+          git commit -m "Refresh PandaBase auction scan targets"
+          git push

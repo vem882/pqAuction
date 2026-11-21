@@ -362,26 +362,26 @@ local function otherSearch()
 end
 
 local function createTab(parent)
-    panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -66)
-    panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -12, 12)
-    panel:SetFrameLevel(parent:GetFrameLevel() + 60)
-    panel:EnableMouse(true)
-    panel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 22 })
-    panel:SetBackdropColor(0.09, 0.07, 0.05, 1)
+    -- This is an auction-house page, not a separate dialog.  Keeping it within
+    -- the native content area also makes ESC and the AH close button behave as
+    -- players expect.
+    panel = CreateFrame("Frame", nil, parent)
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -42)
+    if parent.MoneyFrameBorder then
+        panel:SetPoint("BOTTOMRIGHT", parent.MoneyFrameBorder, "TOPRIGHT", -5, 2)
+    else
+        panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -5, 32)
+    end
+    panel:SetFrameLevel(parent:GetFrameLevel() + 10)
     panel:Hide()
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 22, -22)
+    title:SetPoint("TOPLEFT", 16, -16)
     title:SetText(L["PandaQuest auction prices"])
-    local close = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
-    close:SetPoint("TOPRIGHT", -3, -3)
-    close:SetScript("OnClick", function() panel:Hide() end)
 
     status = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     status:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -15)
-    status:SetPoint("RIGHT", -22, 0)
+    status:SetPoint("RIGHT", -16, 0)
     status:SetJustifyH("LEFT")
     scanButton = CreateFrame("Button", "PandaQuestAuctionScanButton", panel, "UIPanelButtonTemplate")
     scanButton:SetSize(170, 26)
@@ -437,12 +437,37 @@ local function createTab(parent)
     results:SetPoint("RIGHT")
     results:SetJustifyH("LEFT")
 
-    tab = CreateFrame("Button", "PandaQuestAuctionTab", parent, "UIPanelButtonTemplate")
-    tab:SetSize(50, 24)
-    tab:SetPoint("TOPRIGHT", parent, "BOTTOMRIGHT", -12, -1)
+    -- AuctionHouseFrameTabTemplate is shared by current and Classic AH UIs.
+    -- Fall back to the generic tab skin for clients that do not expose it.
+    local template = parent == _G.AuctionHouseFrame and "AuctionHouseFrameTabTemplate" or "CharacterFrameTabButtonTemplate"
+    tab = CreateFrame("Button", "PandaQuestAuctionTab", parent, template)
+    local previous = parent.AuctionsTab or parent.SellTab or parent.BuyTab
+    if previous then
+        tab:SetPoint("LEFT", previous, "RIGHT", -15, 0)
+    else
+        tab:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 20, -28)
+    end
     tab:SetText("PQ")
-    tab:SetScript("OnClick", function() panel:SetShown(not panel:IsShown()) end)
-    panel:SetScript("OnHide", reset)
+    tab:SetScript("OnClick", function()
+        if panel:IsShown() then
+            panel:Hide()
+            return
+        end
+        panel:Show()
+        if _G.PanelTemplates_SelectTab then PanelTemplates_SelectTab(tab) end
+    end)
+    panel:SetScript("OnShow", function()
+        if _G.PanelTemplates_SelectTab then PanelTemplates_SelectTab(tab) end
+    end)
+    panel:SetScript("OnHide", function()
+        reset()
+        if _G.PanelTemplates_DeselectTab then PanelTemplates_DeselectTab(tab) end
+    end)
+    if parent.SetDisplayMode then
+        hooksecurefunc(parent, "SetDisplayMode", function()
+            if panel and panel:IsShown() then panel:Hide() end
+        end)
+    end
     reset()
 end
 
