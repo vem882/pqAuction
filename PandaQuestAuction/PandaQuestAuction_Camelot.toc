@@ -11,11 +11,13 @@
 ## X-License: GPL-3.0
 ## X-Curse-Project-ID: 1807835
 ## Category: Auctions
+## SavedVariables: PandaQuestAuctionMarket, PandaQuestOwnAuctions
 
 Locale.lua
 Bootstrap.lua
 Database\Overrides\AuctionMissing.lua
 Telemetry.lua
+Dashboard.lua
 AuctionScan.lua
 OwnAuctions.lua
 Commands.lua

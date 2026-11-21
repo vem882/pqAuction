@@ -9,6 +9,47 @@ local floor, format = math.floor, string.format
 local M = {}
 ns.Telemetry = M
 
+-- A small local read model for PandaQuest's market page.  It deliberately
+-- stores observations, not seller names or raw listings.
+local MAX_MARKET_PRICES = 12000
+local function rememberPrices(prices, source)
+    local store = _G.PandaQuestAuctionMarket
+    if type(store) ~= "table" or store.version ~= 1 or type(store.prices) ~= "table" then
+        store = { version = 1, prices = {} }
+        _G.PandaQuestAuctionMarket = store
+    end
+    local now, count = unixNow(), 0
+    for id, row in pairs(store.prices) do
+        if type(row) ~= "table" or type(row.at) ~= "number" or now - row.at > 30 * 86400 then
+            store.prices[id] = nil
+        else
+            count = count + 1
+        end
+    end
+    for id, copper in pairs(prices or {}) do
+        if type(id) == "number" and type(copper) == "number" and copper > 0 then
+            local old = store.prices[id]
+            store.prices[id] = { money = math.floor(copper), previous = old and old.money or nil,
+                at = now, source = source }
+            count = count + (old and 0 or 1)
+        end
+    end
+    -- Keep the newest observations if an unusually large scan filled the cache.
+    while count > MAX_MARKET_PRICES do
+        local oldestId, oldest = nil, now
+        for id, row in pairs(store.prices) do
+            if row.at < oldest then oldestId, oldest = id, row.at end
+        end
+        if not oldestId then break end
+        store.prices[oldestId], count = nil, count - 1
+    end
+end
+
+function M.GetMarketPrices()
+    local store = _G.PandaQuestAuctionMarket
+    return type(store) == "table" and type(store.prices) == "table" and store.prices or {}
+end
+
 local function unixNow()
     return (time and time()) or 0
 end
@@ -53,6 +94,7 @@ function M.QueueNativeAuctionPrices(prices, quantities, listings, targeted)
         end
     end
     if #scan.events > 0 then nativeAuctionScan = scan end
+    rememberPrices(prices, "scan")
     return added
 end
 
@@ -117,6 +159,7 @@ local function hookAuctionator()
             events[index] = { e = "AP", t = 0, item = id, money = prices[id], kind = "auctionator" }
         end
         pendingAuctionScan = { at = unixNow(), events = events }
+        rememberPrices(prices, "auctionator")
         Log.Print("Queued %d of %d Auctionator prices. Log out or reload to send them with Sync.", count, #ids)
     end }, completed)
 end
