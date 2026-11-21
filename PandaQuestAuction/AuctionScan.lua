@@ -365,14 +365,12 @@ local function createTab(parent)
     -- This is an auction-house page, not a separate dialog.  Keeping it within
     -- the native content area also makes ESC and the AH close button behave as
     -- players expect.
-    panel = CreateFrame("Frame", nil, parent)
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -42)
-    if parent.MoneyFrameBorder then
-        panel:SetPoint("BOTTOMRIGHT", parent.MoneyFrameBorder, "TOPRIGHT", -5, 2)
-    else
-        panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -5, 32)
-    end
-    panel:SetFrameLevel(parent:GetFrameLevel() + 10)
+    panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+    -- A content page must cover the active Blizzard/Auctionator view.  A plain,
+    -- opaque background keeps this a tab while preventing both UIs from mixing.
+    panel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
+    panel:SetBackdropColor(0.07, 0.06, 0.05, 1)
+    panel:SetFrameLevel(parent:GetFrameLevel() + 60)
     panel:Hide()
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -444,8 +442,20 @@ local function createTab(parent)
     local previous = parent.AuctionsTab or parent.SellTab or parent.BuyTab
     if previous then
         tab:SetPoint("LEFT", previous, "RIGHT", -15, 0)
+        -- Start under the native tab row.  The previous version started at the
+        -- frame top, which drew PQ controls over Auctions and Auctionator.
+        panel:SetPoint("TOP", previous, "BOTTOM", 0, -2)
+        panel:SetPoint("LEFT", parent, "LEFT", 5, 0)
+        panel:SetPoint("RIGHT", parent, "RIGHT", -5, 0)
     else
         tab:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 20, -28)
+        panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -66)
+        panel:SetPoint("RIGHT", parent, "RIGHT", -12, 0)
+    end
+    if parent.MoneyFrameBorder then
+        panel:SetPoint("BOTTOM", parent.MoneyFrameBorder, "TOP", 0, 2)
+    else
+        panel:SetPoint("BOTTOM", parent, "BOTTOM", 0, 32)
     end
     tab:SetText("PQ")
     tab:SetScript("OnClick", function()
