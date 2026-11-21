@@ -25,7 +25,7 @@ local function build(panel)
     local page, query = "market", ""
     local heading = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     heading:SetPoint("TOPLEFT", 16, -14)
-    heading:SetText("Huutokauppa")
+    heading:SetText("Auction")
     local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -5)
     hint:SetPoint("RIGHT", -16, 0)
@@ -59,19 +59,19 @@ local function build(panel)
                 end
             end
             table.sort(rows, function(a, b) return a.row.money > b.row.money end)
-            hint:SetText("Paikalliset ja synkronoidut hinta-arviot · nuoli kertoo muutoksen edelliseen havaintoon")
+            hint:SetText("Local and synced price estimates · arrow shows the change since the previous observation")
             for i = 1, math.min(#rows, 250) do
                 local row = rows[i]
                 local change = "—"
                 if row.row.previous and row.row.previous > 0 then
                     local pct = math.floor((row.row.money - row.row.previous) * 100 / row.row.previous + 0.5)
-                    change = pct < 0 and ("|cff52d273↓ " .. -pct .. "% · ostosignaali|r")
-                        or pct > 0 and ("|cffffc050↑ " .. pct .. "% · myyntisignaali|r") or "→ vakaa"
+                    change = pct < 0 and ("|cff52d273↓ " .. -pct .. "% · buy signal|r")
+                        or pct > 0 and ("|cffffc050↑ " .. pct .. "% · sell signal|r") or "→ stable"
                 end
                 lines[#lines + 1] = string.format("%s  |cffffd100%s|r  %s  |cff999999%s sitten · %s|r",
                     row.name, money(row.row.money), change, age(now - row.row.at), row.row.source or "scan")
             end
-            if #rows == 0 then lines[1] = "Ei hintahavaintoja. Avaa huutokauppa ja suorita skannaus." end
+            if #rows == 0 then lines[1] = "No price observations. Open the auction house and run a scan." end
         else
             local store = _G.PandaQuestOwnAuctions
             local character
@@ -80,27 +80,27 @@ local function build(panel)
                 character = store.characters and store.characters[key]
             end
             if page == "listings" then
-                hint:SetText("Omat aktiiviset myynnit · palautusaika on huutokaupan vanhenemiseen")
+                hint:SetText("Your active listings · return time is the auction expiry countdown")
                 for _, row in ipairs((character and character.snapshot and character.snapshot.listings) or {}) do
                     local left = row.expiresAt and age(math.max(0, row.expiresAt - now)) or "ei saatavilla"
                     lines[#lines + 1] = string.format("%s ×%d  |cffffd100%s|r  |cff999999palautuu %s|r",
                         itemName(row.itemId), row.quantity, money(row.buyout), left)
                 end
-                if #lines == 0 then lines[1] = "Ei aktiivisia myynti-ilmoituksia." end
+                if #lines == 0 then lines[1] = "No active auction listings." end
             else
-                hint:SetText("Postilaatikosta luetut toteutuneet myynnit")
+                hint:SetText("Completed sales read from your mailbox")
                 for _, row in ipairs((character and character.sales) or {}) do
                     lines[#lines + 1] = string.format("%s ×%d  |cffffd100%s netto|r  |cff999999%s sitten|r",
                         row.itemName, row.quantity, money(row.net), age(now - row.observedAt))
                 end
-                if #lines == 0 then lines[1] = "Ei postilaatikosta luettuja myyntejä." end
+                if #lines == 0 then lines[1] = "No completed mailbox sales recorded." end
             end
         end
         text:SetText(table.concat(lines, "\n"))
         content:SetHeight(math.max(1, text:GetStringHeight()))
         scroll:SetVerticalScroll(0)
     end
-    for i, spec in ipairs({ { "market", "Markkina" }, { "listings", "Myynnissä" }, { "sales", "Myydyt" } }) do
+    for i, spec in ipairs({ { "market", "Market" }, { "listings", "Listings" }, { "sales", "Sold" } }) do
         local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
         b:SetSize(105, 24); b:SetPoint("TOPLEFT", 16 + (i - 1) * 110, -62); b:SetText(spec[2])
         b:SetScript("OnClick", function() page = spec[1]; refresh() end)
