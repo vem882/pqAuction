@@ -50,6 +50,21 @@ function M.GetMarketPrices()
     return type(store) == "table" and type(store.prices) == "table" and store.prices or {}
 end
 
+-- Atlas and other scanners use Blizzard's browse cache too.  Read the public
+-- result rows when the market page opens, without depending on their internals.
+function M.CaptureVisibleAuctionPrices()
+    if not (C_AuctionHouse and C_AuctionHouse.GetBrowseResults) then return end
+    local prices = {}
+    for _, row in ipairs(C_AuctionHouse.GetBrowseResults() or {}) do
+        local id = row.itemKey and row.itemKey.itemID
+        local price = row.minPrice
+        if type(id) == "number" and type(price) == "number" and price > 0 then
+            prices[id] = not prices[id] and price or math.min(prices[id], price)
+        end
+    end
+    if next(prices) then rememberPrices(prices, "auction house") end
+end
+
 local function unixNow()
     return (time and time()) or 0
 end
