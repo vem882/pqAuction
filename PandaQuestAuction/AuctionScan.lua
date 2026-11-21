@@ -366,11 +366,14 @@ local function createTab(parent)
     -- the native content area also makes ESC and the AH close button behave as
     -- players expect.
     panel = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    -- A content page must cover the active Blizzard/Auctionator view.  A plain,
-    -- opaque background keeps this a tab while preventing both UIs from mixing.
+    -- This is a self-contained page inside the auction house, not a reskinned
+    -- Browse page.  It draws above whichever native or third-party page is
+    -- active, without hiding or re-parenting that addon's frames.  Closing the
+    -- PQ tab therefore restores every other addon's UI exactly as it was.
     panel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
     panel:SetBackdropColor(0.07, 0.06, 0.05, 1)
-    panel:SetFrameLevel(parent:GetFrameLevel() + 60)
+    panel:SetFrameLevel(math.min(parent:GetFrameLevel() + 200, 500))
+    panel:EnableMouse(true)
     panel:Hide()
 
     local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -445,9 +448,11 @@ local function createTab(parent)
     else
         tab:SetPoint("BOTTOMLEFT", parent, "BOTTOMLEFT", 20, -28)
     end
-    -- Auctionator's tabs sit below the frame.  The PQ page belongs to the
-    -- frame's content rectangle, never below whichever tab happens to precede it.
-    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -66)
+    -- Keep the auction house's title and close button, but cover the complete
+    -- page area including Browse's search/filter controls.  Those controls are
+    -- from the inactive page and must never appear mixed with PQ's content.
+    -- The tab itself remains outside this rectangle alongside native/addon tabs.
+    panel:SetPoint("TOPLEFT", parent, "TOPLEFT", 12, -40)
     panel:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -12, 12)
     tab:SetText("PQ")
     tab:SetScript("OnClick", function()
@@ -455,10 +460,12 @@ local function createTab(parent)
             panel:Hide()
             return
         end
+        panel:Raise()
         panel:Show()
         if _G.PanelTemplates_SelectTab then PanelTemplates_SelectTab(tab) end
     end)
     panel:SetScript("OnShow", function()
+        panel:Raise()
         if _G.PanelTemplates_SelectTab then PanelTemplates_SelectTab(tab) end
     end)
     panel:SetScript("OnHide", function()
