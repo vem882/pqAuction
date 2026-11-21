@@ -1,5 +1,9 @@
 # PandaQuest Auction
 
+> Optional auction scanning, market observations and private listing history for PandaQuest.
+
+**Related projects:** [PandaQuest](https://github.com/vem882/pandaquest) · [PandaQuest DB](https://github.com/vem882/pqDB) · [PandaBase](https://pd.zroot.it)
+
 PandaQuest Auction adds price scanning and private auction history to [PandaQuest](https://github.com/vem882/pandaquest). It supports Mists of Pandaria Classic, Classic Era, The Burning Crusade Classic Anniversary and WoW Forever. Available price, quantity and seller observations depend on the game client's auction APIs.
 
 ## Install
@@ -29,3 +33,13 @@ GPL-3.0. See [LICENSE](LICENSE). World of Warcraft is a trademark of Blizzard En
 The addon icon combines the PandaQuest logo with the WoW texture `INV_MISC_COIN_01`. The game artwork belongs to Blizzard Entertainment.
 
 Each release includes a generated `CHANGELOG.md` in the addon folder. The same added, changed and removed sections appear on GitHub and CurseForge.
+
+## Credits and data provenance
+
+Quest, item and category context comes from the versioned PandaQuest DB, which is built from
+[Questie](https://github.com/Questie/Questie), [QuestieDB](https://github.com/Questie/QuestieDB)
+and community-data practices documented by [QuestieTrace](https://github.com/Questie/QuestieTrace).
+Thank you to the Questie community for the research that makes this ecosystem possible.
+
+Auction observations are opt-in and contain market aggregates rather than seller identities. The
+PandaBase community validates incoming observations before publishing shared price information.
