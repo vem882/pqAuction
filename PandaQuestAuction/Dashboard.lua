@@ -71,7 +71,12 @@ local function build(panel)
     local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -5); hint:SetPoint("RIGHT", -16, 0); hint:SetJustifyH("LEFT")
     local search = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
-    search:SetSize(250, 22); search:SetPoint("TOPRIGHT", -18, -17); search:SetAutoFocus(false); search:SetTextInsets(7, 7, 0, 0)
+    -- This is a real edit box, not a decorative search field.  Centre it so
+    -- it is easy to discover, and explicitly accept mouse focus because some
+    -- UI skins disable the template's default click behaviour.
+    search:SetSize(330, 22); search:SetPoint("TOP", panel, "TOP", 0, -17)
+    search:SetAutoFocus(false); search:SetTextInsets(7, 7, 0, 0); search:EnableMouse(true)
+    search:HookScript("OnMouseDown", function(self) self:SetFocus() end)
     local categoryPanel = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     categoryPanel:SetPoint("TOPLEFT", 16, -92); categoryPanel:SetPoint("BOTTOMLEFT", 16, 14); categoryPanel:SetWidth(154)
     categoryPanel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 10, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
@@ -79,7 +84,7 @@ local function build(panel)
     local categoryTitle = categoryPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     categoryTitle:SetPoint("TOPLEFT", 12, -10); categoryTitle:SetText(L["Categories"])
     local scroll = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 178, -124); scroll:SetPoint("BOTTOMRIGHT", -365, 14)
+    scroll:SetPoint("TOPLEFT", 178, -124); scroll:SetPoint("BOTTOMRIGHT", -14, 14)
     local content = CreateFrame("Frame", nil, scroll); content:SetSize(1, 1); scroll:SetScrollChild(content)
     scroll:SetScript("OnSizeChanged", function(_, width) content:SetWidth(math.max(1, width)) end)
     local empty = content:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -87,7 +92,7 @@ local function build(panel)
     local headers = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     headers:SetPoint("TOPLEFT", 182, -100); headers:SetText(L["Item"])
     local priceHeader = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    priceHeader:SetSize(88, 20); priceHeader:SetPoint("TOPRIGHT", -370, -98); priceHeader:SetText(L["Price"])
+    priceHeader:SetSize(88, 20); priceHeader:SetPoint("TOPRIGHT", -18, -98); priceHeader:SetText(L["Price"])
     local changeHeader = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     changeHeader:SetSize(108, 20); changeHeader:SetPoint("RIGHT", priceHeader, "LEFT", -4, 0); changeHeader:SetText(L["Signal"])
 
@@ -262,7 +267,10 @@ local function build(panel)
         else
             scroll:SetPoint("TOPLEFT", 16, -92)
         end
-        scroll:SetPoint("BOTTOMRIGHT", -365, 14)
+        -- The item list owns the available width.  The item detail is an
+        -- overlay opened only after a click, so reserving an empty sidebar
+        -- makes the default market view needlessly narrow.
+        scroll:SetPoint("BOTTOMRIGHT", -14, 14)
         for _, row in ipairs(rows) do row:Hide() end
         if #entries == 0 then empty:SetText(page == "market" and L["No price observations. Open the auction house and run a scan."] or L["No records available."]); content:SetHeight(32); return end
         empty:SetText("")
