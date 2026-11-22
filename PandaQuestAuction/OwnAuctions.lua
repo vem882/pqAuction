@@ -166,6 +166,22 @@ local function fingerprint(row)
     return string.format("%s|%d|%d|%d", row.itemName, row.quantity, row.gross, row.net)
 end
 
+-- Mail invoices expose an item name but not its ID.  Resolve it against the
+-- installed PandaQuest item database so Sold rows can keep their real icon,
+-- tooltip and market-detail link.  The map is built lazily once per session.
+local idsByName
+local function itemIdByName(name)
+    if type(name) ~= "string" or name == "" or not (Core.DB and Core.DB.IterateItemIDs) then return nil end
+    if not idsByName then
+        idsByName = {}
+        for id in Core.DB.IterateItemIDs() do
+            local itemName = Core.DB.GetItemName(id)
+            if itemName and not idsByName[itemName] then idsByName[itemName] = id end
+        end
+    end
+    return idsByName[name]
+end
+
 local function readSales()
     if not mailboxOpen or not settings().recordOwnAuctions then return end
     local count = integer(GetInboxNumItems(), 0, 500)
@@ -187,7 +203,7 @@ local function readSales()
             gross, deposit, cut = money(gross), money(deposit) or 0, money(cut) or 0
             if gross and gross > 0 and plain(daysLeft, "number") and daysLeft >= 0 and daysLeft <= 90 then
                 local row = {
-                    itemName = name, quantity = integer(quantity, 1, 1000000) or 1,
+                    itemId = itemIdByName(name), itemName = name, quantity = integer(quantity, 1, 1000000) or 1,
                     gross = gross, net = math.max(0, gross + deposit - cut), observedAt = now,
                     invoiceExpiresAt = math.floor(now + daysLeft * 86400 + 0.5),
                 }
