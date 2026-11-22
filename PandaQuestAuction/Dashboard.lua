@@ -89,7 +89,7 @@ local function build(panel)
     local priceHeader = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     priceHeader:SetSize(88, 20); priceHeader:SetPoint("TOPRIGHT", -370, -98); priceHeader:SetText(L["Price"])
     local changeHeader = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    changeHeader:SetSize(88, 20); changeHeader:SetPoint("RIGHT", priceHeader, "LEFT", -4, 0); changeHeader:SetText(L["Change"])
+    changeHeader:SetSize(108, 20); changeHeader:SetPoint("RIGHT", priceHeader, "LEFT", -4, 0); changeHeader:SetText(L["Signal"])
 
     local detail = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     detail:SetSize(344, 300); detail:SetPoint("TOPRIGHT", -14, -52)
@@ -101,8 +101,10 @@ local function build(panel)
     close:SetPoint("TOPRIGHT", 2, 2); close:SetScript("OnClick", function() detail:Hide(); selected = nil end)
     local detailPrice = detail:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     detailPrice:SetPoint("TOPLEFT", detailName, "BOTTOMLEFT", 0, -6)
+    local detailInsight = detail:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    detailInsight:SetPoint("TOPLEFT", detailPrice, "BOTTOMLEFT", 0, -4); detailInsight:SetPoint("RIGHT", -14, 0); detailInsight:SetJustifyH("LEFT")
     local graphLabel = detail:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    graphLabel:SetPoint("TOPLEFT", detailPrice, "BOTTOMLEFT", 0, -12); graphLabel:SetText(L["24-hour price history"])
+    graphLabel:SetPoint("TOPLEFT", detailInsight, "BOTTOMLEFT", 0, -8); graphLabel:SetText(L["24-hour price history"])
     local graph = CreateFrame("Frame", nil, detail, "BackdropTemplate")
     graph:SetPoint("TOPLEFT", graphLabel, "BOTTOMLEFT", 0, -4); graph:SetSize(308, 72); graph:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" }); graph:SetBackdropColor(0.10, 0.10, 0.12, 1)
     for i = 1, 24 do
@@ -146,6 +148,17 @@ local function build(panel)
             detailPrice:SetText(string.format(L["%s: %s · observed %s ago%s"], label, money(context.money), age(time() - context.at), expires))
         else
             detailPrice:SetText(row and string.format(L["Current price: %s · observed %s ago"], money(row.money), age(time() - row.at)) or L["No current price observation"])
+        end
+        local insight = ns.Telemetry.GetMarketInsight(id)
+        if not insight then
+            detailInsight:SetText(L["No market signal yet. Run a scan to collect a price."])
+        elseif insight.freshness == "stale" then
+            detailInsight:SetText(string.format(L["Stale · last scan %s ago · run a new scan before trading"], age(insight.age)))
+        elseif insight.samples < 3 then
+            detailInsight:SetText(string.format(L["%s · %d 24-hour samples · more scans needed"], insight.freshness == "fresh" and L["Fresh"] or L["Aging"], insight.samples))
+        else
+            local signal = insight.signal == "buy" and L["Buy signal"] or (insight.signal == "sell" and L["Sell signal"] or L["Fair price"])
+            detailInsight:SetText(string.format(L["%s · %d%% vs 24h median %s · %d samples"], signal, insight.change, money(insight.median), insight.samples))
         end
         alertInput:SetText(alert and money(alert.threshold) or "")
         alertStatus:SetText(alert and (alert.direction == "below" and L["Alert when price is at or below this value"] or L["Alert when price is at or above this value"]) or L["Enter a price, then choose an alert direction."])
@@ -255,8 +268,19 @@ local function build(panel)
         empty:SetText("")
         for index = 1, math.min(#entries, 250) do
             local entry, row = entries[index], rowAt(index)
-            local change, cr, cg, cb = "No earlier price", 0.62, 0.62, 0.66
-            if entry.price.previous and entry.price.previous > 0 then
+            local change, cr, cg, cb = L["No market signal"], 0.62, 0.62, 0.66
+            local insight = entry.id and ns.Telemetry.GetMarketInsight(entry.id, now)
+            if insight and insight.freshness == "stale" then
+                change, cr, cg, cb = L["Stale · scan"], 0.95, 0.55, 0.25
+            elseif insight and insight.samples >= 3 then
+                if insight.signal == "buy" then
+                    change, cr, cg, cb = string.format(L["Buy · %d%% below"], -insight.change), 0.32, 0.82, 0.45
+                elseif insight.signal == "sell" then
+                    change, cr, cg, cb = string.format(L["Sell · %d%% above"], insight.change), 1, 0.75, 0.25
+                else
+                    change, cr, cg, cb = L["Fair price"], 0.75, 0.75, 0.75
+                end
+            elseif entry.price.previous and entry.price.previous > 0 then
                 local pct = math.floor((entry.price.money - entry.price.previous) * 100 / entry.price.previous + 0.5)
                 if pct < 0 then
                     change, cr, cg, cb = string.format("↓%d%% lower", -pct), 0.32, 0.82, 0.45

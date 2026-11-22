@@ -72,6 +72,45 @@ function M.GetPriceHistory(itemId)
     return row and type(row.history) == "table" and row.history or {}
 end
 
+-- Keep recommendations deliberately conservative.  They are based only on
+-- observations the player actually collected during the past day; they are
+-- not a substitute for a realm-wide price source or a promise of profit.
+function M.GetMarketInsight(itemId, now)
+    now = now or unixNow()
+    local row = M.GetMarketPrices()[itemId]
+    if type(row) ~= "table" or type(row.money) ~= "number" or type(row.at) ~= "number" then return nil end
+
+    local values = {}
+    for _, point in ipairs(type(row.history) == "table" and row.history or {}) do
+        if type(point) == "table" and type(point.money) == "number" and type(point.at) == "number"
+            and now - point.at <= HISTORY_WINDOW then
+            values[#values + 1] = point.money
+        end
+    end
+    -- A current price can exist before a history entry was retained by an
+    -- older SavedVariables version.  Use it once, rather than reporting an
+    -- empty market to the player.
+    if #values == 0 then values[1] = row.money end
+    table.sort(values)
+    local count, low, high = #values, values[1], values[#values]
+    local middle = floor((count + 1) / 2)
+    local median = count % 2 == 0 and floor((values[middle] + values[middle + 1]) / 2) or values[middle]
+    local age = math.max(0, now - row.at)
+    local freshness = age <= 15 * 60 and "fresh" or (age <= 60 * 60 and "aging" or "stale")
+    local signal = "insufficient"
+    local rawChange = median > 0 and (row.money - median) * 100 / median or 0
+    local change = rawChange >= 0 and floor(rawChange + 0.5) or -floor(-rawChange + 0.5)
+    if count >= 3 then
+        if change <= -15 then signal = "buy"
+        elseif change >= 15 then signal = "sell"
+        else signal = "fair" end
+    end
+    return {
+        age = age, freshness = freshness, samples = count, low = low, high = high,
+        median = median, change = change, signal = signal, source = row.source,
+    }
+end
+
 local function alertStore()
     local store = _G.PandaQuestAuctionMarket
     if type(store) ~= "table" or store.version ~= 1 or type(store.prices) ~= "table" then
