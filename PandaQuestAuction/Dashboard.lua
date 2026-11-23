@@ -87,6 +87,8 @@ local function build(panel)
     search:SetScript("OnMouseDown", function(self) self:SetFocus() end)
     search:SetScript("OnEditFocusGained", function(self) self:SetBackdropBorderColor(1, 0.82, 0, 1) end)
     search:SetScript("OnEditFocusLost", function(self) self:SetBackdropBorderColor(0.36, 0.30, 0.12, 1) end)
+    local searchButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+    searchButton:SetSize(92, 22); searchButton:SetPoint("LEFT", search, "RIGHT", 8, 0); searchButton:SetText(L["Search"])
     local categoryPanel = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     categoryPanel:SetPoint("TOPLEFT", 16, -92); categoryPanel:SetPoint("BOTTOMLEFT", 16, 14); categoryPanel:SetWidth(154)
     categoryPanel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 10, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
@@ -338,13 +340,18 @@ local function build(panel)
     end
     priceHeader:SetScript("OnClick", function() sortKey = "price"; refresh() end)
     changeHeader:SetScript("OnClick", function() sortKey = "change"; refresh() end)
-    search:SetScript("OnTextChanged", function(self)
-        query = self:GetText() or ""
-        searchHint:SetShown(query == "")
+    -- Filtering the whole market cache for every character can hitch on a
+    -- large scan.  Keep typing local; apply only from Search or Enter.
+    local function runSearch()
+        query = search:GetText() or ""
         refresh()
+    end
+    search:SetScript("OnTextChanged", function(self) searchHint:SetShown((self:GetText() or "") == "") end)
+    searchButton:SetScript("OnClick", runSearch)
+    search:SetScript("OnEscapePressed", function(self)
+        self:SetText(""); query = ""; self:ClearFocus(); refresh()
     end)
-    search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    search:SetScript("OnEnterPressed", function(self) runSearch(); self:ClearFocus() end)
     panel:SetScript("OnShow", function() content:SetWidth(math.max(1, scroll:GetWidth())); refresh() end)
     return panel
 end
