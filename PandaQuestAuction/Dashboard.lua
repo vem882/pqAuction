@@ -70,13 +70,23 @@ local function build(panel)
     heading:SetPoint("TOPLEFT", 16, -14); heading:SetText(L["Auction"])
     local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     hint:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -5); hint:SetPoint("RIGHT", -16, 0); hint:SetJustifyH("LEFT")
-    local search = CreateFrame("EditBox", nil, panel, "InputBoxTemplate")
-    -- This is a real edit box, not a decorative search field.  Centre it so
-    -- it is easy to discover, and explicitly accept mouse focus because some
-    -- UI skins disable the template's default click behaviour.
+    -- Do not use InputBoxTemplate here.  On some client/UI-skin combinations
+    -- its inherited mouse handler is swallowed by the host window.  A plain
+    -- named EditBox has its own focus and accepts keyboard input reliably.
+    local search = CreateFrame("EditBox", "PandaQuestAuctionDashboardSearch", panel, "BackdropTemplate")
     search:SetSize(330, 22); search:SetPoint("TOP", panel, "TOP", 0, -17)
-    search:SetAutoFocus(false); search:SetTextInsets(7, 7, 0, 0); search:EnableMouse(true)
-    search:HookScript("OnMouseDown", function(self) self:SetFocus() end)
+    search:SetAutoFocus(false); search:SetFontObject("GameFontHighlightSmall")
+    search:SetTextColor(0.93, 0.93, 0.93); search:SetTextInsets(7, 7, 0, 0)
+    search:SetJustifyH("LEFT"); search:SetMaxLetters(80); search:EnableMouse(true)
+    if search.EnableKeyboard then search:EnableKeyboard(true) end
+    search:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 10,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 } })
+    search:SetBackdropColor(0.03, 0.03, 0.045, 1); search:SetBackdropBorderColor(0.36, 0.30, 0.12, 1)
+    local searchHint = search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    searchHint:SetPoint("LEFT", search, "LEFT", 8, 0); searchHint:SetText(L["Search items"])
+    search:SetScript("OnMouseDown", function(self) self:SetFocus() end)
+    search:SetScript("OnEditFocusGained", function(self) self:SetBackdropBorderColor(1, 0.82, 0, 1) end)
+    search:SetScript("OnEditFocusLost", function(self) self:SetBackdropBorderColor(0.36, 0.30, 0.12, 1) end)
     local categoryPanel = CreateFrame("Frame", nil, panel, "BackdropTemplate")
     categoryPanel:SetPoint("TOPLEFT", 16, -92); categoryPanel:SetPoint("BOTTOMLEFT", 16, 14); categoryPanel:SetWidth(154)
     categoryPanel:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 10, insets = { left = 3, right = 3, top = 3, bottom = 3 } })
@@ -328,8 +338,13 @@ local function build(panel)
     end
     priceHeader:SetScript("OnClick", function() sortKey = "price"; refresh() end)
     changeHeader:SetScript("OnClick", function() sortKey = "change"; refresh() end)
-    search:SetScript("OnTextChanged", function(self) query = self:GetText() or ""; refresh() end)
+    search:SetScript("OnTextChanged", function(self)
+        query = self:GetText() or ""
+        searchHint:SetShown(query == "")
+        refresh()
+    end)
     search:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
     panel:SetScript("OnShow", function() content:SetWidth(math.max(1, scroll:GetWidth())); refresh() end)
     return panel
 end
